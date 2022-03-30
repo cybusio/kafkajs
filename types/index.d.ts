@@ -1028,11 +1028,13 @@ export type ConsumerRunConfig = {
  */
 export type ConsumerSubscribeTopic = { topic: string | RegExp; fromBeginning?: boolean }
 export type ConsumerSubscribeTopics = { topics: (string | RegExp)[]; fromBeginning?: boolean }
+export type ConsumerUnsubscribeTopic = { topic: string | RegExp }
 
 export type Consumer = {
   connect(): Promise<void>
   disconnect(): Promise<void>
   subscribe(subscription: ConsumerSubscribeTopics | ConsumerSubscribeTopic): Promise<void>
+  unsubscribe(topic: ConsumerUnsubscribeTopic): Promise<void>
   stop(): Promise<void>
   run(config?: ConsumerRunConfig): Promise<void>
   commitOffsets(topicPartitions: Array<TopicPartitionOffsetAndMetadata>): Promise<void>

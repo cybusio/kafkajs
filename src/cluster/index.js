@@ -210,6 +210,15 @@ module.exports = class Cluster {
 
   /**
    * @public
+   * @param {string} topic
+   * @return {Promise}
+   */
+   async removeTargetTopic(topic) {
+    return this.removeMultipleTargetTopics([topic])
+  }
+
+  /**
+   * @public
    * @param {string[]} topics
    * @return {Promise}
    */
@@ -234,6 +243,39 @@ module.exports = class Cluster {
             e.type === 'UNKNOWN_TOPIC_OR_PARTITION' ||
             e.type === 'TOPIC_AUTHORIZATION_FAILED'
           ) {
+            this.targetTopics = previousTopics
+          }
+
+          throw e
+        }
+      }
+    } finally {
+      await this.mutatingTargetTopics.release()
+    }
+  }
+
+  /**
+   * @public
+   * @param {string[]} topics
+   * @return {Promise}
+   */
+   async removeMultipleTargetTopics(topics) {
+    await this.mutatingTargetTopics.acquire()
+
+    try {
+      const previousSize = this.targetTopics.size
+      const previousTopics = new Set(this.targetTopics)
+      for (const topic of topics) {
+        this.targetTopics.delete(topic)
+      }
+
+      const hasChanged = previousSize !== this.targetTopics.size || !this.brokerPool.metadata
+
+      if (hasChanged) {
+        try {
+          await this.refreshMetadata()
+        } catch (e) {
+          if (e.type === 'INVALID_TOPIC_EXCEPTION' || e.type === 'UNKNOWN_TOPIC_OR_PARTITION') {
             this.targetTopics = previousTopics
           }
 

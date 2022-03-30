@@ -130,7 +130,10 @@ module.exports = ({
     }
   })
 
-  /** @type {import("../../types").Consumer["subscribe"]} */
+  /**
+   * @public
+   * @type {import("../../types").Consumer["subscribe"]}
+   */
   const subscribe = async ({ topic, topics: subscriptionTopics, fromBeginning = false }) => {
     if (consumerGroup) {
       throw new KafkaJSNonRetriableError('Cannot subscribe to topic while consumer is running')
@@ -183,6 +186,51 @@ module.exports = ({
     }
 
     await cluster.addMultipleTargetTopics(topicsToSubscribe)
+  }
+
+  /**
+   * @public
+   * @type {import("../../types").Consumer["unsubscribe"]}
+   */
+  const unsubscribe = async ({ topic }) => {
+    if (consumerGroup) {
+      throw new KafkaJSNonRetriableError('Cannot unsubscribe from topic while consumer is running')
+    }
+
+    if (!topic) {
+      throw new KafkaJSNonRetriableError(`Invalid topic ${topic}`)
+    }
+
+    const isRegExp = topic instanceof RegExp
+    if (typeof topic !== 'string' && !isRegExp) {
+      throw new KafkaJSNonRetriableError(
+        `Invalid topic ${topic} (${typeof topic}), the topic name has to be a String or a RegExp`
+      )
+    }
+
+    const topicsToUnsubscribe = []
+    if (isRegExp) {
+      const topicRegExp = topic
+      const metadata = await cluster.metadata()
+      const matchedTopics = metadata.topicMetadata
+        .map(({ topic: topicName }) => topicName)
+        .filter(topicName => topicRegExp.test(topicName))
+      logger.debug('Unsubscription based on RegExp', {
+        groupId,
+        topicRegExp: topicRegExp.toString(),
+        matchedTopics,
+      })
+
+      topicsToUnsubscribe.push(...matchedTopics)
+    } else {
+      topicsToUnsubscribe.push(topic)
+    }
+
+    for (const t of topicsToUnsubscribe) {
+      delete topics[t]
+    }
+
+    await cluster.removeMultipleTargetTopics(topicsToUnsubscribe)
   }
 
   /** @type {import("../../types").Consumer["run"]} */
@@ -507,6 +555,7 @@ module.exports = ({
     connect,
     disconnect,
     subscribe,
+    unsubscribe,
     stop,
     run,
     commitOffsets,
