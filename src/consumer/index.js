@@ -331,6 +331,9 @@ module.exports = ({
     await start(onCrash)
   }
 
+   /** @type {import("../../types").Consumer["isRunning"]} */
+  const isRunning = () => !!consumerGroup
+
   /** @type {import("../../types").Consumer["on"]} */
   const on = (eventName, listener) => {
     if (!eventNames.includes(eventName)) {
@@ -537,6 +540,7 @@ module.exports = ({
     unsubscribe,
     stop,
     run,
+    isRunning,
     commitOffsets,
     seek,
     describeGroup,

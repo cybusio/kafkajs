@@ -964,6 +964,7 @@ export type Consumer = {
   unsubscribe(topic: ConsumerUnsubscribeTopic): Promise<void>
   stop(): Promise<void>
   run(config?: ConsumerRunConfig): Promise<void>
+  isRunning(): boolean
   commitOffsets(topicPartitions: Array<TopicPartitionOffsetAndMetadata>): Promise<void>
   seek(topicPartitionOffset: TopicPartitionOffset): void
   describeGroup(): Promise<GroupDescription>
